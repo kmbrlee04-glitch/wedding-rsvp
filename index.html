@@ -235,3 +235,18 @@ function cannotAttend() {
 
 </body>
 </html>
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const responseSheet = ss.getSheetByName("Responses"); // make sure this tab exists
+  const data = JSON.parse(e.postData.contents);
+
+  const mainGuest = data.mainGuest;
+  const companions = data.companions || [];
+  const attending = data.attending;
+
+  // Record submission in the Responses sheet
+  responseSheet.appendRow([new Date(), mainGuest, companions.join(", "), attending]);
+  
+  return ContentService.createTextOutput("Success");
+}
+
