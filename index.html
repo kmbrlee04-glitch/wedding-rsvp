@@ -1,55 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wedding RSVP</title>
-
+  <base target="_top">
   <style>
     body {
       font-family: "Bookman Old Style", serif;
       background: white;
-      max-width: 420px;
-      margin: auto;
+      text-align: center;
       padding: 20px;
-      color: #333;
     }
 
-    h2 {
-      text-align: center;
-      color: #8b5a2b;
+    h1 {
+      color: brown;
     }
 
-    h3, p {
-      text-align: center;
+    .one-line {
+      white-space: nowrap;
     }
 
-    input[type=text] {
-      width: 100%;
+    .green-text {
+      color: green;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
       padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      font-family: "Bookman Old Style", serif;
+      width: 80%;
+      max-width: 300px;
+      margin: 10px 0;
     }
 
     button {
+      padding: 10px 20px;
+      margin: 10px;
       border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-weight: bold;
       cursor: pointer;
-      margin: 6px;
-      min-width: 140px;
       font-family: "Bookman Old Style", serif;
     }
 
-    .primary-btn {
-      background-color: #e6d3b1;
-    }
-
-    .primary-btn:hover {
-      background-color: #d8c39a;
+    .beige-btn {
+      background-color: #d8c4a0;
     }
 
     .cancel-btn {
@@ -57,161 +47,134 @@
       border: 1px solid #ccc;
     }
 
-    .center { text-align: center; }
-    .hidden { display: none; }
-
-    .green-text {
-      color: #2e8b57;
-      font-weight: bold;
+    .hidden {
+      display: none;
     }
 
-    .one-line {
-      white-space: nowrap;
+    .center {
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
     }
 
-    label {
-      display: block;
-      margin: 8px 0;
+    .companion-row {
+      margin: 5px 0;
     }
   </style>
 </head>
 
 <body>
 
-<h2>Wedding RSVP</h2>
+  <h1>Wedding RSVP</h1>
 
-<p class="one-line">
-  Please search for your name to
-  <span class="green-text">CONFIRM YOUR RSVP</span>.
-</p>
-<p>If you cannot find your name, please contact us directly.</p>
-
-<!-- STEP 1 -->
-<div id="step1">
-  <input type="text" id="guestName" list="guestNames" placeholder="Enter your full name">
-  <datalist id="guestNames"></datalist>
-
-  <div class="center">
-    <button class="primary-btn" onclick="checkSeats()">ENTER</button>
+  <!-- INSTRUCTIONS -->
+  <div id="instructions">
+    <p class="one-line">
+      Please search for your name to
+      <span class="green-text">CONFIRM YOUR RSVP</span>.
+    </p>
+    <p>If you cannot find your name, please contact us directly.</p>
   </div>
-</div>
 
-<!-- STEP 2 -->
-<p id="seatInfo" class="hidden"></p>
+  <!-- STEP 1 -->
+  <div id="step1" class="center">
+    <input list="guestList" id="guestName" placeholder="Enter your name">
+    <datalist id="guestList"></datalist>
 
-<!-- STEP 3 -->
-<div id="step2" class="hidden">
-  <h3>Companions</h3>
-  <div id="companions"></div>
-
-  <div class="center">
-    <button class="primary-btn" onclick="confirmRSVP()">CONFIRM RSVP</button>
-    <button class="cancel-btn" onclick="returnHome()">CANCEL</button>
+    <button class="beige-btn" onclick="checkSeats()">ENTER</button>
   </div>
-</div>
 
-<!-- STEP 4 -->
-<div id="success" class="hidden">
-  <h3>Thank you!</h3>
-  <p>Your RSVP has been successfully recorded.</p>
-  <div class="center">
-    <button class="primary-btn" onclick="returnHome()">RETURN TO HOME</button>
+  <!-- STEP 2 -->
+  <div id="step2" class="hidden center">
+    <p id="seatText"></p>
+
+    <div id="companions"></div>
+
+    <button class="beige-btn" onclick="submitRSVP()">CONFIRM RSVP</button>
+    <button class="cancel-btn" onclick="goHome()">CANCEL</button>
   </div>
-</div>
+
+  <!-- STEP 3 -->
+  <div id="step3" class="hidden center">
+    <h3>Thank you for confirming your RSVP!</h3>
+    <button class="beige-btn" onclick="goHome()">RETURN TO HOME</button>
+  </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXk6-IJH9LXjdfptACSbHrS4BL2ghgSab0bzqIUf21WpBvACec4t3pxkWmCAuWl6VtFQ/exec";
-let reservedSeats = 0;
+  let reservedSeats = 0;
+  let mainGuest = "";
 
-/* 🔹 Load guest names for auto-suggest */
-fetch(`${WEB_APP_URL}?list=true`)
-  .then(res => res.json())
-  .then(names => {
-    const list = document.getElementById("guestNames");
+  // Load guest names
+  google.script.run.withSuccessHandler(function(names){
+    const list = document.getElementById("guestList");
     names.forEach(n => {
       const opt = document.createElement("option");
       opt.value = n;
       list.appendChild(opt);
     });
-  });
+  }).getGuestNames();
 
-/* 🔹 Check reserved seats */
-function checkSeats() {
-  const name = document.getElementById("guestName").value.trim();
-  if (!name) { alert("Please enter your name."); return; }
+  function checkSeats() {
+    mainGuest = document.getElementById("guestName").value.trim();
+    if (!mainGuest) return alert("Please enter your name.");
 
-  fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.seats || data.seats === "Not found") {
-        alert("Name not found. Please contact us.");
+    google.script.run.withSuccessHandler(function(data){
+      if (data.seats === "Not found") {
+        alert("Name not found.");
         return;
       }
 
-      reservedSeats = Number(data.seats);
+      reservedSeats = data.seats;
 
-      document.getElementById("seatInfo").innerText =
-        `You have ${reservedSeats} RSVP(s) including YOU.`;
-      document.getElementById("seatInfo").classList.remove("hidden");
-
+      document.getElementById("instructions").classList.add("hidden");
       document.getElementById("step1").classList.add("hidden");
       document.getElementById("step2").classList.remove("hidden");
 
-      generateCompanionFields();
-    });
-}
+      document.getElementById("seatText").innerText =
+        `You have ${reservedSeats} RSVP(s) including YOU`;
 
-/* 🔹 Generate companion inputs */
-function generateCompanionFields() {
-  const c = document.getElementById("companions");
-  c.innerHTML = "";
+      const container = document.getElementById("companions");
+      container.innerHTML = "";
 
-  for (let i = 1; i < reservedSeats; i++) {
-    c.innerHTML += `
-      <label>
-        Companion ${i}:
-        <input type="text" placeholder="Name">
-        <input type="checkbox" checked> Will attend
-      </label>
-    `;
+      for (let i = 1; i < reservedSeats; i++) {
+        const div = document.createElement("div");
+        div.className = "companion-row";
+        div.innerHTML = `
+          <input type="text" placeholder="Companion ${i} name">
+          <label>
+            <input type="checkbox" checked> Attending
+          </label>
+        `;
+        container.appendChild(div);
+      }
+
+    }).getReservedSeats(mainGuest);
   }
-}
 
-/* 🔹 Submit RSVP */
-function confirmRSVP() {
-  const mainGuest = document.getElementById("guestName").value.trim();
-  const rows = document.querySelectorAll("#companions label");
-  const companions = [];
+  function submitRSVP() {
+    const rows = document.querySelectorAll(".companion-row");
+    let companions = [];
 
-  rows.forEach(r => {
-    const name = r.querySelector('input[type=text]').value.trim();
-    const attend = r.querySelector('input[type=checkbox]').checked;
-    if (name && attend) companions.push(name);
-  });
+    rows.forEach(r => {
+      const name = r.querySelector("input[type='text']").value.trim();
+      const attend = r.querySelector("input[type='checkbox']").checked;
+      if (name && attend) companions.push(name);
+    });
 
-  fetch(WEB_APP_URL, {
-    method: "POST",
-    body: JSON.stringify({
+    google.script.run.withSuccessHandler(function(){
+      document.getElementById("step2").classList.add("hidden");
+      document.getElementById("step3").classList.remove("hidden");
+    }).saveRSVP({
       mainGuest: mainGuest,
       companions: companions,
       attending: true
-    })
-  }).then(() => {
-    document.getElementById("step2").classList.add("hidden");
-    document.getElementById("seatInfo").classList.add("hidden");
-    document.getElementById("success").classList.remove("hidden");
-  });
-}
+    });
+  }
 
-/* 🔹 Reset */
-function returnHome() {
-  document.getElementById("guestName").value = "";
-  document.getElementById("companions").innerHTML = "";
-  document.getElementById("step1").classList.remove("hidden");
-  document.getElementById("step2").classList.add("hidden");
-  document.getElementById("seatInfo").classList.add("hidden");
-  document.getElementById("success").classList.add("hidden");
-}
+  function goHome() {
+    location.reload();
+  }
 </script>
 
 </body>
