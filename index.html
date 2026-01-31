@@ -4,19 +4,20 @@
   <title>Wedding RSVP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin:auto; padding:20px; background:#fff8f0; color:#333; }
-    h2 { text-align:center; color:#a0522d; }
-    p.description { text-align:center; background:#fff0e5; padding:10px; border-radius:8px; margin-bottom:20px; font-weight:bold; color:#8b4513; }
-    input { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
-    button { width:48%; padding:12px; margin:5px 1%; border-radius:6px; border:none; font-weight:bold; cursor:pointer; }
-    #confirmBtn { background:#a0522d; color:white; }
-    #cancelBtn { background:#d3d3d3; color:#333; }
-    #cannotAttendBtn { background:#ff6961; color:white; }
-    #companions input { margin-top:5px; }
-    #suggestions div { padding:8px; border-bottom:1px solid #ddd; cursor:pointer; background:#fff8f0; }
-    #suggestions div:hover { background:#ffe5d1; }
-    .hidden { display:none; }
-    @media (max-width:400px){button{width:100%; margin:5px 0;}}
+    body { font-family: 'Segoe UI', sans-serif; max-width:500px; margin:auto; padding:20px; background:#fff8f0; color:#333; }
+    h2{text-align:center;color:#a0522d;}
+    p.description{text-align:center;background:#fff0e5;padding:10px;border-radius:8px;margin-bottom:20px;font-weight:bold;color:#8b4513;}
+    input[type=text]{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;box-sizing:border-box;}
+    button{width:48%;padding:12px;margin:5px 1%;border-radius:6px;border:none;font-weight:bold;cursor:pointer;}
+    #confirmBtn{background:#a0522d;color:white;}
+    #cannotAttendBtn{background:#ff6961;color:white;}
+    #cancelBtn{background:#d3d3d3;color:#333;}
+    #companions input[type=text]{margin-top:5px;}
+    #companions label{display:block; margin:5px 0;}
+    #suggestions div{padding:8px;border-bottom:1px solid #ddd;cursor:pointer;background:#fff8f0;}
+    #suggestions div:hover{background:#ffe5d1;}
+    .hidden{display:none;}
+    @media(max-width:400px){button{width:100%;margin:5px 0;}}
   </style>
 </head>
 <body>
@@ -42,77 +43,81 @@
   <h3>Companion Names</h3>
   <div id="companionFields"></div>
   <div style="text-align:center;">
-    <button id="confirmBtn" onclick="submitRSVP()">CONFIRM RSVP</button>
-    <button id="cannotAttendBtn" onclick="cannotAttend()">CANNOT ATTEND</button>
-    <button id="cancelBtn" onclick="cancelRSVP()">CANCEL</button>
+    <button onclick="submitRSVP()">CONFIRM RSVP</button>
+    <button onclick="cannotAttend()">CANNOT ATTEND</button>
+    <button onclick="cancelRSVP()">CANCEL</button>
   </div>
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0oy9OTTbpEEliJDUTbhCTbOW7LXNbyMWrCvIz7E2zPaCuiWC-t38UL4waUFZIhtDjTw/exec"; // replace with your Apps Script URL
+const WEB_APP_URL = "PASTE_YOUR_WEB_APP_URL_HERE"; // Replace with your Apps Script URL
 let guestNames = [];
 let seatCount = 0;
 
-// Fetch guest list for auto-suggest
-fetch(`${WEB_APP_URL}?list=true`)
-  .then(res => res.json())
-  .then(data => guestNames = data);
+// Fetch guest names for auto-suggest
+fetch(`${WEB_APP_URL}?list=true`).then(res=>res.json()).then(data=>guestNames=data);
 
 // Auto-suggest
-function showSuggestions() {
+function showSuggestions(){
   const input = document.getElementById("guestName").value.toLowerCase();
   const box = document.getElementById("suggestions");
-  box.innerHTML = "";
-  if (!input) return;
-  guestNames.filter(n => n.toLowerCase().includes(input)).slice(0,5).forEach(name => {
+  box.innerHTML="";
+  if(!input) return;
+  guestNames.filter(n=>n.toLowerCase().includes(input)).slice(0,5).forEach(name=>{
     const div = document.createElement("div");
-    div.textContent = name;
-    div.onclick = () => { document.getElementById("guestName").value = name; box.innerHTML = ""; };
+    div.textContent=name;
+    div.onclick=()=>{document.getElementById("guestName").value=name;box.innerHTML="";};
     box.appendChild(div);
   });
 }
 
 // Check reserved seats
-function checkSeats() {
+function checkSeats(){
   const name = document.getElementById("guestName").value;
   fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.seats || data.seats === "Not found") {
-        document.getElementById("seatInfo").innerText = "Name not found. Please select your name or contact us.";
+    .then(res=>res.json())
+    .then(data=>{
+      if(!data.seats||data.seats==="Not found"){
+        document.getElementById("seatInfo").innerText="Name not found. Please contact us.";
         return;
       }
-      seatCount = data.seats;
-      document.getElementById("seatInfo").innerText = `You have ${seatCount} reserved seat(s).`;
-      let fields = "";
-      for(let i=1;i<seatCount;i++){ // companions = total seats - 1
-        fields += `<input type="text" placeholder="Companion ${i} Name">`;
+      seatCount=data.seats;
+      document.getElementById("seatInfo").innerText=`You have ${seatCount} reserved seat(s).`;
+
+      let fields="";
+      for(let i=1;i<seatCount;i++){
+        fields+=`<label>Companion ${i}: <input type="text" placeholder="Name"> <input type="checkbox" checked> Will attend</label>`;
       }
-      document.getElementById("companionFields").innerHTML = fields;
+      document.getElementById("companionFields").innerHTML=fields;
       document.getElementById("companions").classList.remove("hidden");
     });
 }
 
 // Submit RSVP
-function submitRSVP() {
-  const companions = [];
-  document.querySelectorAll("#companionFields input").forEach(i => { if(i.value) companions.push(i.value); });
-  const mainGuest = document.getElementById("guestName").value;
-  if(!mainGuest){ alert("Enter your name first!"); return; }
+function submitRSVP(){
+  const companionElements = document.querySelectorAll("#companionFields label");
+  const companions=[];
+  companionElements.forEach(l=>{
+    const name=l.querySelector('input[type=text]').value.trim();
+    const attend=l.querySelector('input[type=checkbox]').checked;
+    if(name && attend) companions.push(name);
+  });
+  const mainGuest=document.getElementById("guestName").value.trim();
+  if(!mainGuest){ alert("Enter your name!"); return; }
   fetch(WEB_APP_URL,{
     method:"POST",
-    body:JSON.stringify({ mainGuest: mainGuest, companions: companions, attending:true })
-  }).then(()=>{ alert("RSVP confirmed successfully!"); location.reload(); });
+    body:JSON.stringify({mainGuest:mainGuest,companions:companions,attending:true})
+  }).then(()=>{alert("RSVP confirmed!"); location.reload();});
 }
 
 // Cannot attend
 function cannotAttend(){
-  const name = document.getElementById("guestName").value;
+  const name=document.getElementById("guestName").value.trim();
   if(!name){ alert("Enter your name before submitting that you cannot attend."); return; }
   fetch(WEB_APP_URL,{
     method:"POST",
-    body:JSON.stringify({ mainGuest:name, companions:[], attending:false })
-  }).then(()=>{ alert("Recorded that you cannot attend. Thank you!"); location.reload(); });
+    body:JSON.stringify({mainGuest:name,companions:[],attending:false})
+  }).then(()=>{alert("Recorded that you cannot attend."); location.reload();});
 }
 
 // Cancel/reset
