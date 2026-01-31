@@ -14,7 +14,12 @@
       color: #333;
     }
 
-    h2, h3, p {
+    h2 {
+      text-align: center;
+      color: #8b5a2b; /* brown */
+    }
+
+    h3, p {
       text-align: center;
     }
 
@@ -43,7 +48,6 @@
       font-family: "Bookman Old Style", serif;
     }
 
-    /* Beige buttons */
     .primary-btn {
       background-color: #e6d3b1;
     }
@@ -52,7 +56,6 @@
       background-color: #d8c39a;
     }
 
-    /* Cancel button */
     .cancel-btn {
       background-color: white;
       border: 1px solid #ccc;
@@ -66,6 +69,15 @@
       display: block;
       margin: 8px 0;
     }
+
+    .one-line {
+      white-space: nowrap;
+    }
+
+    .green-text {
+      color: #2e8b57; /* green */
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -73,8 +85,11 @@
 
 <h2>Wedding RSVP</h2>
 
+<p class="one-line">
+  Please search for your name to
+  <span class="green-text">CONFIRM YOUR RSVP</span>.
+</p>
 <p>
-  Please search for your name to <b>CONFIRM YOUR RSVP</b>.<br>
   If you cannot find your name, please contact us directly.
 </p>
 
@@ -136,64 +151,3 @@ function checkSeats() {
 
       document.getElementById("step1").classList.add("hidden");
       document.getElementById("step2").classList.remove("hidden");
-
-      generateCompanionFields();
-    });
-}
-
-function generateCompanionFields() {
-  const container = document.getElementById("companions");
-  container.innerHTML = "";
-
-  for (let i = 1; i < reservedSeats; i++) {
-    container.innerHTML += `
-      <label>
-        Companion ${i}:
-        <input type="text" placeholder="Name">
-        <input type="checkbox" checked> Will attend
-      </label>
-    `;
-  }
-}
-
-function confirmRSVP() {
-  const mainGuest = document.getElementById("guestName").value.trim();
-  const rows = document.querySelectorAll("#companions label");
-  const companions = [];
-
-  rows.forEach(r => {
-    const name = r.querySelector('input[type=text]').value.trim();
-    const attending = r.querySelector('input[type=checkbox]').checked;
-    if (name && attending) companions.push(name);
-  });
-
-  fetch(WEB_APP_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      mainGuest: mainGuest,
-      companions: companions,
-      attending: true
-    })
-  }).then(() => {
-    document.getElementById("step2").classList.add("hidden");
-    document.getElementById("seatInfo").classList.add("hidden");
-    document.getElementById("success").classList.remove("hidden");
-  });
-}
-
-function cancelRSVP() {
-  returnHome();
-}
-
-function returnHome() {
-  document.getElementById("guestName").value = "";
-  document.getElementById("companions").innerHTML = "";
-  document.getElementById("step1").classList.remove("hidden");
-  document.getElementById("step2").classList.add("hidden");
-  document.getElementById("seatInfo").classList.add("hidden");
-  document.getElementById("success").classList.add("hidden");
-}
-</script>
-
-</body>
-</html>
