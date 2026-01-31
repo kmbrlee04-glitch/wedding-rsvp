@@ -125,7 +125,7 @@
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxb-Ww_bWOBst4_vX1sBRIC_olHLWU17PKMsu6uRcA7fAawtrsYikZw4K8GOSOT_U3KMQ/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz8uCpCWLTlSf7-TIGqNraJXnjMJspU5_8vF_PlHjNPIcQ_H4vebp_esYB8mzn6KaUgIg/exec";
 let reservedSeats = 0;
 
 function checkSeats() {
@@ -151,3 +151,64 @@ function checkSeats() {
 
       document.getElementById("step1").classList.add("hidden");
       document.getElementById("step2").classList.remove("hidden");
+
+      generateCompanionFields();
+    });
+}
+
+function generateCompanionFields() {
+  const container = document.getElementById("companions");
+  container.innerHTML = "";
+
+  for (let i = 1; i < reservedSeats; i++) {
+    container.innerHTML += `
+      <label>
+        Companion ${i}:
+        <input type="text" placeholder="Name">
+        <input type="checkbox" checked> Will attend
+      </label>
+    `;
+  }
+}
+
+function confirmRSVP() {
+  const mainGuest = document.getElementById("guestName").value.trim();
+  const rows = document.querySelectorAll("#companions label");
+  const companions = [];
+
+  rows.forEach(r => {
+    const name = r.querySelector('input[type=text]').value.trim();
+    const attending = r.querySelector('input[type=checkbox]').checked;
+    if (name && attending) companions.push(name);
+  });
+
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      mainGuest: mainGuest,
+      companions: companions,
+      attending: true
+    })
+  }).then(() => {
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("seatInfo").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  });
+}
+
+function cancelRSVP() {
+  returnHome();
+}
+
+function returnHome() {
+  document.getElementById("guestName").value = "";
+  document.getElementById("companions").innerHTML = "";
+  document.getElementById("step1").classList.remove("hidden");
+  document.getElementById("step2").classList.add("hidden");
+  document.getElementById("seatInfo").classList.add("hidden");
+  document.getElementById("success").classList.add("hidden");
+}
+</script>
+
+</body>
+</html>
