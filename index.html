@@ -9,130 +9,108 @@
     p.description{text-align:center;background:#fff0e5;padding:10px;border-radius:8px;margin-bottom:20px;font-weight:bold;color:#8b4513;}
     input[type=text]{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;box-sizing:border-box;}
     button{width:48%;padding:12px;margin:5px 1%;border-radius:6px;border:none;font-weight:bold;cursor:pointer;}
+    #enterBtn{background:#a0522d;color:white;}
     #confirmBtn{background:#a0522d;color:white;}
-    #cannotAttendBtn{background:#ff6961;color:white;}
     #cancelBtn{background:#d3d3d3;color:#333;}
     #companions input[type=text]{margin-top:5px;}
     #companions label{display:block; margin:5px 0;}
-    #suggestions div{padding:8px;border-bottom:1px solid #ddd;cursor:pointer;background:#fff8f0;}
-    #suggestions div:hover{background:#ffe5d1;}
     .hidden{display:none;}
-    @media(max-width:400px){button{width:100%;margin:5px 0;}}
   </style>
 </head>
 <body>
 
 <h2>Wedding RSVP</h2>
 <p class="description">
-  Please search for your name to CONFIRM YOUR RSVP.<br>
-  If you cannot find your name, please contact us directly.
+  Please enter your name to start your RSVP.
 </p>
 
-<input type="text" id="guestName" placeholder="Enter your full name" oninput="showSuggestions()" />
-<div id="suggestions"></div>
-
-<div style="text-align:center;">
-  <button id="confirmBtn" onclick="checkSeats()">CONFIRM RSVP</button>
-  <button id="cannotAttendBtn" onclick="cannotAttend()">CANNOT ATTEND</button>
-  <button id="cancelBtn" onclick="cancelRSVP()">CANCEL</button>
+<!-- Step 1: Main Guest Entry -->
+<div id="mainGuestDiv">
+  <input type="text" id="guestName" placeholder="Enter your full name">
+  <button id="enterBtn" onclick="checkSeats()">ENTER</button>
 </div>
 
-<p id="seatInfo"></p>
+<!-- Step 2: Seat Info -->
+<p id="seatInfo" class="hidden"></p>
 
+<!-- Step 3: Companions Form -->
 <div id="companions" class="hidden">
-  <h3>Companion Names</h3>
+  <h3>Enter companion names (tick if they will attend)</h3>
   <div id="companionFields"></div>
   <div style="text-align:center;">
-    <button onclick="submitRSVP()">CONFIRM RSVP</button>
-    <button onclick="cannotAttend()">CANNOT ATTEND</button>
-    <button onclick="cancelRSVP()">CANCEL</button>
+    <button id="confirmBtn" onclick="submitRSVP()">CONFIRM RSVP</button>
+    <button id="cancelBtn" onclick="cancelRSVP()">CANCEL</button>
   </div>
 </div>
 
 <script>
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx03YFFWSaxcrqW7IGuLIr9CBjquHNh0kSWs7b5vPC3R1vbVzFh0KB7DN49vBb4O6w6/exec"; // Replace with your Apps Script URL
-let guestNames = [];
 let seatCount = 0;
 
-// Fetch guest names for auto-suggest
-fetch(`${WEB_APP_URL}?list=true`).then(res=>res.json()).then(data=>guestNames=data);
-
-// Auto-suggest function
-function showSuggestions(){
-  const input = document.getElementById("guestName").value.toLowerCase();
-  const box = document.getElementById("suggestions");
-  box.innerHTML="";
-  if(!input) return;
-  guestNames.filter(n=>n.toLowerCase().includes(input)).slice(0,5).forEach(name=>{
-    const div = document.createElement("div");
-    div.textContent=name;
-    div.onclick=()=>{document.getElementById("guestName").value=name; box.innerHTML="";};
-    box.appendChild(div);
-  });
-}
-
-// Check reserved seats
+// Step 2: Check reserved seats
 function checkSeats(){
-  const name = document.getElementById("guestName").value;
+  const name = document.getElementById("guestName").value.trim();
+  if(!name){ alert("Please enter your name."); return; }
+
   fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}`)
     .then(res=>res.json())
     .then(data=>{
       if(!data.seats || data.seats==="Not found"){
-        document.getElementById("seatInfo").innerText="Name not found. Please contact us.";
+        alert("Name not found. Please contact us directly.");
         return;
       }
-      seatCount=data.seats;
-      document.getElementById("seatInfo").innerText=`You have ${seatCount} reserved seat(s).`;
 
-      // Generate companion fields with checkbox
-      let fields="";
+      seatCount = data.seats;
+      document.getElementById("seatInfo").innerText = `You have ${seatCount} RSVP(s) including you.`;
+      document.getElementById("seatInfo").classList.remove("hidden");
+
+      // Hide main guest entry
+      document.getElementById("mainGuestDiv").classList.add("hidden");
+
+      // Show companions form
+      const companionFields = document.getElementById("companionFields");
+      companionFields.innerHTML = "";
+
+      // Generate input fields with checkbox
       for(let i=1;i<seatCount;i++){
-        fields+=`
-          <label>
-            Companion ${i}: <input type="text" placeholder="Name"> 
-            <input type="checkbox" checked> Will attend
-          </label>`;
+        const label = document.createElement("label");
+        label.innerHTML = `
+          Companion ${i}: <input type="text" placeholder="Name">
+          <input type="checkbox" checked> Will attend
+        `;
+        companionFields.appendChild(label);
       }
-      document.getElementById("companionFields").innerHTML=fields;
+
       document.getElementById("companions").classList.remove("hidden");
     });
 }
 
-// Submit RSVP
+// Step 3: Submit RSVP
 function submitRSVP(){
   const companionElements = document.querySelectorAll("#companionFields label");
   const companions=[];
   companionElements.forEach(l=>{
-    const name=l.querySelector('input[type=text]').value.trim();
-    const attend=l.querySelector('input[type=checkbox]').checked;
+    const name = l.querySelector('input[type=text]').value.trim();
+    const attend = l.querySelector('input[type=checkbox]').checked;
     if(name && attend) companions.push(name);
   });
-  const mainGuest=document.getElementById("guestName").value.trim();
+
+  const mainGuest = document.getElementById("guestName").value.trim();
   if(!mainGuest){ alert("Enter your name!"); return; }
 
-  fetch(WEB_APP_URL,{
-    method:"POST",
-    body:JSON.stringify({ mainGuest: mainGuest, companions: companions, attending:true })
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify({ mainGuest: mainGuest, companions: companions, attending:true })
   }).then(()=>{ alert("RSVP confirmed!"); location.reload(); });
 }
 
-// Cannot attend
-function cannotAttend(){
-  const name=document.getElementById("guestName").value.trim();
-  if(!name){ alert("Enter your name before submitting that you cannot attend."); return; }
-  fetch(WEB_APP_URL,{
-    method:"POST",
-    body:JSON.stringify({ mainGuest:name, companions:[], attending:false })
-  }).then(()=>{ alert("Recorded that you cannot attend."); location.reload(); });
-}
-
-// Cancel/reset
+// Step 4: Cancel/Reset
 function cancelRSVP(){
   document.getElementById("guestName").value="";
-  document.getElementById("seatInfo").innerText="";
+  document.getElementById("seatInfo").classList.add("hidden");
   document.getElementById("companions").classList.add("hidden");
   document.getElementById("companionFields").innerHTML="";
-  document.getElementById("suggestions").innerHTML="";
+  document.getElementById("mainGuestDiv").classList.remove("hidden");
 }
 </script>
 
