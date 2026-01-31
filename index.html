@@ -1,116 +1,197 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Wedding RSVP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wedding RSVP</title>
+
   <style>
-    body { font-family: 'Segoe UI', sans-serif; max-width:500px; margin:auto; padding:20px; background:#fff8f0; color:#333; }
-    h2{text-align:center;color:#a0522d;}
-    p.description{text-align:center;background:#fff0e5;padding:10px;border-radius:8px;margin-bottom:20px;font-weight:bold;color:#8b4513;}
-    input[type=text]{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:1px solid #ccc;box-sizing:border-box;}
-    button{width:48%;padding:12px;margin:5px 1%;border-radius:6px;border:none;font-weight:bold;cursor:pointer;}
-    #enterBtn{background:#a0522d;color:white;}
-    #confirmBtn{background:#a0522d;color:white;}
-    #cancelBtn{background:#d3d3d3;color:#333;}
-    #companions input[type=text]{margin-top:5px;}
-    #companions label{display:block; margin:5px 0;}
-    .hidden{display:none;}
+    body {
+      font-family: "Bookman Old Style", serif;
+      background: white;
+      max-width: 420px;
+      margin: auto;
+      padding: 20px;
+      color: #333;
+    }
+
+    h2, h3, p {
+      text-align: center;
+    }
+
+    input[type=text] {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-family: "Bookman Old Style", serif;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    button {
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 6px;
+      min-width: 140px;
+      font-family: "Bookman Old Style", serif;
+    }
+
+    /* Beige buttons */
+    .primary-btn {
+      background-color: #e6d3b1;
+    }
+
+    .primary-btn:hover {
+      background-color: #d8c39a;
+    }
+
+    /* Cancel button */
+    .cancel-btn {
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0;
+    }
   </style>
 </head>
+
 <body>
 
 <h2>Wedding RSVP</h2>
-<p class="description">
-  Please enter your name to start your RSVP.
+
+<p>
+  Please search for your name to <b>CONFIRM YOUR RSVP</b>.<br>
+  If you cannot find your name, please contact us directly.
 </p>
 
-<!-- Step 1: Main Guest Entry -->
-<div id="mainGuestDiv">
+<!-- STEP 1 -->
+<div id="step1">
   <input type="text" id="guestName" placeholder="Enter your full name">
-  <button id="enterBtn" onclick="checkSeats()">ENTER</button>
+  <div class="center">
+    <button class="primary-btn" onclick="checkSeats()">ENTER</button>
+  </div>
 </div>
 
-<!-- Step 2: Seat Info -->
+<!-- STEP 2 -->
 <p id="seatInfo" class="hidden"></p>
 
-<!-- Step 3: Companions Form -->
-<div id="companions" class="hidden">
-  <h3>Enter companion names (tick if they will attend)</h3>
-  <div id="companionFields"></div>
-  <div style="text-align:center;">
-    <button id="confirmBtn" onclick="submitRSVP()">CONFIRM RSVP</button>
-    <button id="cancelBtn" onclick="cancelRSVP()">CANCEL</button>
+<!-- STEP 3 -->
+<div id="step2" class="hidden">
+  <h3>Companions</h3>
+  <div id="companions"></div>
+
+  <div class="center">
+    <button class="primary-btn" onclick="confirmRSVP()">CONFIRM RSVP</button>
+    <button class="cancel-btn" onclick="cancelRSVP()">CANCEL</button>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div id="success" class="hidden">
+  <h3>Thank you!</h3>
+  <p>Your RSVP has been successfully recorded.</p>
+  <div class="center">
+    <button class="primary-btn" onclick="returnHome()">RETURN TO HOME</button>
   </div>
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyc_Cksyu3ozmhcy3A8YX91tE0utCIrS4OdLz0F4olirx9mo-MHZIBwzfknqQHtqITJeg/exec"; // Replace with your Apps Script URL
-let seatCount = 0;
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_4OUnM_G3JSdcGMNm3yMr_X7Wyg95Ej88AUFMUP9H/dev";
+let reservedSeats = 0;
 
-// Step 2: Check reserved seats
-function checkSeats(){
+function checkSeats() {
   const name = document.getElementById("guestName").value.trim();
-  if(!name){ alert("Please enter your name."); return; }
+  if (!name) {
+    alert("Please enter your name.");
+    return;
+  }
 
   fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}`)
-    .then(res=>res.json())
-    .then(data=>{
-      if(!data.seats || data.seats==="Not found"){
-        alert("Name not found. Please contact us directly.");
+    .then(res => res.json())
+    .then(data => {
+      if (!data.seats || data.seats === "Not found") {
+        alert("Name not found. Please contact us.");
         return;
       }
 
-      seatCount = data.seats;
-      document.getElementById("seatInfo").innerText = `You have ${seatCount} RSVP(s) including you.`;
+      reservedSeats = Number(data.seats);
+
+      document.getElementById("seatInfo").innerText =
+        `You have ${reservedSeats} RSVP(s) including you.`;
       document.getElementById("seatInfo").classList.remove("hidden");
 
-      // Hide main guest entry
-      document.getElementById("mainGuestDiv").classList.add("hidden");
+      document.getElementById("step1").classList.add("hidden");
+      document.getElementById("step2").classList.remove("hidden");
 
-      // Show companions form
-      const companionFields = document.getElementById("companionFields");
-      companionFields.innerHTML = "";
-
-      // Generate input fields with checkbox
-      for(let i=1;i<seatCount;i++){
-        const label = document.createElement("label");
-        label.innerHTML = `
-          Companion ${i}: <input type="text" placeholder="Name">
-          <input type="checkbox" checked> Will attend
-        `;
-        companionFields.appendChild(label);
-      }
-
-      document.getElementById("companions").classList.remove("hidden");
+      generateCompanionFields();
     });
 }
 
-// Step 3: Submit RSVP
-function submitRSVP(){
-  const companionElements = document.querySelectorAll("#companionFields label");
-  const companions=[];
-  companionElements.forEach(l=>{
-    const name = l.querySelector('input[type=text]').value.trim();
-    const attend = l.querySelector('input[type=checkbox]').checked;
-    if(name && attend) companions.push(name);
-  });
+function generateCompanionFields() {
+  const container = document.getElementById("companions");
+  container.innerHTML = "";
 
+  for (let i = 1; i < reservedSeats; i++) {
+    container.innerHTML += `
+      <label>
+        Companion ${i}:
+        <input type="text" placeholder="Name">
+        <input type="checkbox" checked> Will attend
+      </label>
+    `;
+  }
+}
+
+function confirmRSVP() {
   const mainGuest = document.getElementById("guestName").value.trim();
-  if(!mainGuest){ alert("Enter your name!"); return; }
+  const rows = document.querySelectorAll("#companions label");
+  const companions = [];
+
+  rows.forEach(r => {
+    const name = r.querySelector('input[type=text]').value.trim();
+    const attending = r.querySelector('input[type=checkbox]').checked;
+    if (name && attending) companions.push(name);
+  });
 
   fetch(WEB_APP_URL, {
     method: "POST",
-    body: JSON.stringify({ mainGuest: mainGuest, companions: companions, attending:true })
-  }).then(()=>{ alert("RSVP confirmed!"); location.reload(); });
+    body: JSON.stringify({
+      mainGuest: mainGuest,
+      companions: companions,
+      attending: true
+    })
+  }).then(() => {
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("seatInfo").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  });
 }
 
-// Step 4: Cancel/Reset
-function cancelRSVP(){
-  document.getElementById("guestName").value="";
+function cancelRSVP() {
+  returnHome();
+}
+
+function returnHome() {
+  document.getElementById("guestName").value = "";
+  document.getElementById("companions").innerHTML = "";
+  document.getElementById("step1").classList.remove("hidden");
+  document.getElementById("step2").classList.add("hidden");
   document.getElementById("seatInfo").classList.add("hidden");
-  document.getElementById("companions").classList.add("hidden");
-  document.getElementById("companionFields").innerHTML="";
-  document.getElementById("mainGuestDiv").classList.remove("hidden");
+  document.getElementById("success").classList.add("hidden");
 }
 </script>
 
