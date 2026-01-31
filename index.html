@@ -16,7 +16,7 @@
 
     h2 {
       text-align: center;
-      color: #8b5a2b; /* brown */
+      color: #8b5a2b;
     }
 
     h3, p {
@@ -31,10 +31,6 @@
       border: 1px solid #ccc;
       box-sizing: border-box;
       font-family: "Bookman Old Style", serif;
-    }
-
-    .center {
-      text-align: center;
     }
 
     button {
@@ -61,22 +57,21 @@
       border: 1px solid #ccc;
     }
 
-    .hidden {
-      display: none;
-    }
+    .center { text-align: center; }
+    .hidden { display: none; }
 
-    label {
-      display: block;
-      margin: 8px 0;
+    .green-text {
+      color: #2e8b57;
+      font-weight: bold;
     }
 
     .one-line {
       white-space: nowrap;
     }
 
-    .green-text {
-      color: #2e8b57; /* green */
-      font-weight: bold;
+    label {
+      display: block;
+      margin: 8px 0;
     }
   </style>
 </head>
@@ -89,13 +84,13 @@
   Please search for your name to
   <span class="green-text">CONFIRM YOUR RSVP</span>.
 </p>
-<p>
-  If you cannot find your name, please contact us directly.
-</p>
+<p>If you cannot find your name, please contact us directly.</p>
 
 <!-- STEP 1 -->
 <div id="step1">
-  <input type="text" id="guestName" placeholder="Enter your full name">
+  <input type="text" id="guestName" list="guestNames" placeholder="Enter your full name">
+  <datalist id="guestNames"></datalist>
+
   <div class="center">
     <button class="primary-btn" onclick="checkSeats()">ENTER</button>
   </div>
@@ -111,7 +106,7 @@
 
   <div class="center">
     <button class="primary-btn" onclick="confirmRSVP()">CONFIRM RSVP</button>
-    <button class="cancel-btn" onclick="cancelRSVP()">CANCEL</button>
+    <button class="cancel-btn" onclick="returnHome()">CANCEL</button>
   </div>
 </div>
 
@@ -125,15 +120,25 @@
 </div>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwSMMnUcLEyc6diaUiO4n_JpF9pXMg9hVMhG61I3St8KvLXh3uP-whAWe9aWkf6AjwIgg/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyXk6-IJH9LXjdfptACSbHrS4BL2ghgSab0bzqIUf21WpBvACec4t3pxkWmCAuWl6VtFQ/exec";
 let reservedSeats = 0;
 
+/* 🔹 Load guest names for auto-suggest */
+fetch(`${WEB_APP_URL}?list=true`)
+  .then(res => res.json())
+  .then(names => {
+    const list = document.getElementById("guestNames");
+    names.forEach(n => {
+      const opt = document.createElement("option");
+      opt.value = n;
+      list.appendChild(opt);
+    });
+  });
+
+/* 🔹 Check reserved seats */
 function checkSeats() {
   const name = document.getElementById("guestName").value.trim();
-  if (!name) {
-    alert("Please enter your name.");
-    return;
-  }
+  if (!name) { alert("Please enter your name."); return; }
 
   fetch(`${WEB_APP_URL}?name=${encodeURIComponent(name)}`)
     .then(res => res.json())
@@ -146,7 +151,7 @@ function checkSeats() {
       reservedSeats = Number(data.seats);
 
       document.getElementById("seatInfo").innerText =
-        `You have ${reservedSeats} RSVP(s) including you.`;
+        `You have ${reservedSeats} RSVP(s) including YOU.`;
       document.getElementById("seatInfo").classList.remove("hidden");
 
       document.getElementById("step1").classList.add("hidden");
@@ -156,12 +161,13 @@ function checkSeats() {
     });
 }
 
+/* 🔹 Generate companion inputs */
 function generateCompanionFields() {
-  const container = document.getElementById("companions");
-  container.innerHTML = "";
+  const c = document.getElementById("companions");
+  c.innerHTML = "";
 
   for (let i = 1; i < reservedSeats; i++) {
-    container.innerHTML += `
+    c.innerHTML += `
       <label>
         Companion ${i}:
         <input type="text" placeholder="Name">
@@ -171,6 +177,7 @@ function generateCompanionFields() {
   }
 }
 
+/* 🔹 Submit RSVP */
 function confirmRSVP() {
   const mainGuest = document.getElementById("guestName").value.trim();
   const rows = document.querySelectorAll("#companions label");
@@ -178,8 +185,8 @@ function confirmRSVP() {
 
   rows.forEach(r => {
     const name = r.querySelector('input[type=text]').value.trim();
-    const attending = r.querySelector('input[type=checkbox]').checked;
-    if (name && attending) companions.push(name);
+    const attend = r.querySelector('input[type=checkbox]').checked;
+    if (name && attend) companions.push(name);
   });
 
   fetch(WEB_APP_URL, {
@@ -196,10 +203,7 @@ function confirmRSVP() {
   });
 }
 
-function cancelRSVP() {
-  returnHome();
-}
-
+/* 🔹 Reset */
 function returnHome() {
   document.getElementById("guestName").value = "";
   document.getElementById("companions").innerHTML = "";
